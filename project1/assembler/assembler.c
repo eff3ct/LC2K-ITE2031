@@ -28,7 +28,22 @@ int calc_label(char* label) {
 			return symbol_table[i].address;
 		}
 	}
-	return -1;
+	printf("error: %s label doesn't exist.\n", label);
+	exit(1);
+}
+
+/**
+ * @brief return 1 if label is exist.
+ * @param label
+ * @return 1 if label is exist.
+ */ 
+int is_exist_label(char* label) {
+	for (int i = 0; i < MAXLINELENGTH; i++) {
+		if (!strcmp(symbol_table[i].label, label)) {
+			return 1;
+		}
+	}
+	return 0;
 }
 
 int main(int argc, char *argv[]) 
@@ -64,6 +79,10 @@ int main(int argc, char *argv[])
 	int address = 0;
 	while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
 		if (label[0] != '\0') {
+			if (is_exist_label(label)) {
+				printf("error: %s label already exists.\n", label);
+				exit(1);
+			}
 			strcpy(symbol_table[address].label, label);
 			symbol_table[address].address = address;
 		}
@@ -85,6 +104,14 @@ int main(int argc, char *argv[])
    		// 000
 		if (!strcmp(opcode, "add")) {
 			inst |= (0 << 22);
+			if (!isNumber(arg0) || !isNumber(arg1)) {
+				printf("error: arg0, arg1 must be a number.\n");
+				exit(1);
+			}
+			if ((atoi(arg0) < 0 || 7 < atoi(arg0)) || (atoi(arg1) < 0 || 7 < atoi(arg1))) {
+				printf("error: arg0, arg1 must be 0 <= arg0, arg1 <= 7.\n");
+				exit(1);
+			}
 			inst |= (atoi(arg0) << 19);
 			inst |= (atoi(arg1) << 16);
 			inst |= (atoi(arg2) << 0);
@@ -92,6 +119,14 @@ int main(int argc, char *argv[])
     	// 001
 		else if (!strcmp(opcode, "nor")) {
 			inst |= (1 << 22);
+			if (!isNumber(arg0) || !isNumber(arg1)) {
+				printf("error: arg0, arg1 must be a number.\n");
+				exit(1);
+			}
+			if ((atoi(arg0) < 0 || 7 < atoi(arg0)) || (atoi(arg1) < 0 || 7 < atoi(arg1))) {
+				printf("error: arg0, arg1 must be 0 <= arg0, arg1 <= 7.\n");
+				exit(1);
+			}
 			inst |= (atoi(arg0) << 19);
 			inst |= (atoi(arg1) << 16);
 			inst |= (atoi(arg2) << 0);
@@ -99,27 +134,71 @@ int main(int argc, char *argv[])
 	  	// 010
     	else if (!strcmp(opcode, "lw")) {
 			inst |= (2 << 22);
+			if (!isNumber(arg0) || !isNumber(arg1)) {
+				printf("error: arg0, arg1 must be a number.\n");
+				exit(1);
+			}
+			if ((atoi(arg0) < 0 || 7 < atoi(arg0)) || (atoi(arg1) < 0 || 7 < atoi(arg1))) {
+				printf("error: arg0, arg1 must be 0 <= arg0, arg1 <= 7.\n");
+				exit(1);
+			}
 			inst |= (atoi(arg0) << 19);
 			inst |= (atoi(arg1) << 16);
+			if (isNumber(arg2) && ((1 << 15) <= atoi(arg2) || -(1 << 15) > atoi(arg2))) {
+				printf("error: offsetField is out of range.\n");
+				exit(1);
+			}
 			inst |= (isNumber(arg2) ? atoi(arg2) : calc_label(arg2));
 		}
 		// 011
     	else if (!strcmp(opcode, "sw")) {
 			inst += 3 << 22;
+			if (!isNumber(arg0) || !isNumber(arg1)) {
+				printf("error: arg0, arg1 must be a number.\n");
+				exit(1);
+			}
+			if ((atoi(arg0) < 0 || 7 < atoi(arg0)) || (atoi(arg1) < 0 || 7 < atoi(arg1))) {
+				printf("error: arg0, arg1 must be 0 <= arg0, arg1 <= 7.\n");
+				exit(1);
+			}
 			inst |= (atoi(arg0) << 19);
 			inst |= (atoi(arg1) << 16);
+			if (isNumber(arg2) && ((1 << 15) <= atoi(arg2) || -(1 << 15) > atoi(arg2))) {
+				printf("error: offsetField is out of range.\n");
+				exit(1);
+			}
 			inst |= (isNumber(arg2) ? atoi(arg2) : calc_label(arg2));
 		}
 		// 100
 		else if (!strcmp(opcode, "beq")) {
 			inst |= 4 << 22;
+			if (!isNumber(arg0) || !isNumber(arg1)) {
+				printf("error: arg0, arg1 must be a number.\n");
+				exit(1);
+			}
+			if ((atoi(arg0) < 0 || 7 < atoi(arg0)) || (atoi(arg1) < 0 || 7 < atoi(arg1))) {
+				printf("error: arg0, arg1 must be 0 <= arg0, arg1 <= 7.\n");
+				exit(1);
+			}
 			inst |= (atoi(arg0) << 19);
 			inst |= (atoi(arg1) << 16);
+			if (isNumber(arg2) && ((1 << 15) <= atoi(arg2) || -(1 << 15) > atoi(arg2))) {
+				printf("error: offsetField is out of range.\n");
+				exit(1);
+			}
 			inst |= (isNumber(arg2) ? atoi(arg2) : (unsigned short)(calc_label(arg2) - address - 1));
 		}
 		// 101
     	else if (!strcmp(opcode, "jalr")) {
 			inst |= 5 << 22;
+			if (!isNumber(arg0) || !isNumber(arg1)) {
+				printf("error: arg0, arg1 must be a number.\n");
+				exit(1);
+			}
+			if ((atoi(arg0) < 0 || 7 < atoi(arg0)) || (atoi(arg1) < 0 || 7 < atoi(arg1))) {
+				printf("error: arg0, arg1 must be 0 <= arg0, arg1 <= 7.\n");
+				exit(1);
+			}
 			inst |= (atoi(arg0) << 19);
 			inst |= (atoi(arg1) << 16);
 		}
@@ -134,9 +213,11 @@ int main(int argc, char *argv[])
 		else if (!strcmp(opcode, ".fill")) {
 			inst = isNumber(arg0) ? atoi(arg0) : calc_label(arg0);
 		}
+		else {
+			printf("error: unrecognized opcode %s.\n", opcode);
+			exit(1);
+		}
 		fprintf(outFilePtr, "%d\n", inst);
-		printf("%d\n", inst);
-		printf("%s %s %s %s %s\n", label, opcode, arg0, arg1, arg2);
 		address++;
 	}
 
