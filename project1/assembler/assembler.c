@@ -9,6 +9,28 @@
 int readAndParse(FILE *, char *, char *, char *, char *, char *);
 int isNumber(char *);
 
+// symbolic address table.
+typedef struct symbol {
+	char label[MAXLINELENGTH];
+	int address;
+	int value;
+} symbol_t;
+symbol_t symbol_table[MAXLINELENGTH];
+
+/**
+ * @brief find address of label.
+ * @param label 
+ * @return label address.
+ */
+int calc_label(char* label) {
+	for (int i = 0; i < MAXLINELENGTH; i++) {
+		if (!strcmp(symbol_table[i].label, label)) {
+			return symbol_table[i].address;
+		}
+	}
+	return -1;
+}
+
 int main(int argc, char *argv[]) 
 {
 	char *inFileString, *outFileString;
@@ -36,24 +58,86 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	/* here is an example for how to use readAndParse to read a line from
-		 inFilePtr */
-	if (!readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
-		/* reached end of file */
+	/**
+	 * Phase 1, calculate the address of the label.
+	 */
+	int address = 0;
+	while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
+		if (label[0] != '\0') {
+			strcpy(symbol_table[address].label, label);
+			symbol_table[address].address = address;
+		}
+		address++;
 	}
 
-	/* TODO: Phase-1 label calculation */
-
-	/* this is how to rewind the file ptr so that you start reading from the
-		 beginning of the file */
+	/**
+	 * Phase 2, translate the assembly code.
+	 */
+	address = 0;
 	rewind(inFilePtr);
+	while (readAndParse(inFilePtr, label, opcode, arg0, arg1, arg2)) {
+		/**
+		 * opcode is "add", "nor", "lw", "sw", "beq", "jalr", "halt", or "noop" 
+		 * below codes are opcode switching part.
+		 */
+		int inst = 0;
 
-	/* TODO: Phase-2 generate machine codes to outfile */
-
-	/* after doing a readAndParse, you may want to do the following to test the
-		 opcode */
-	if (!strcmp(opcode, "add")) {
-		/* do whatever you need to do for opcode "add" */
+   		// 000
+		if (!strcmp(opcode, "add")) {
+			inst |= (0 << 22);
+			inst |= (atoi(arg0) << 19);
+			inst |= (atoi(arg1) << 16);
+			inst |= (atoi(arg2) << 0);
+		}
+    	// 001
+		else if (!strcmp(opcode, "nor")) {
+			inst |= (1 << 22);
+			inst |= (atoi(arg0) << 19);
+			inst |= (atoi(arg1) << 16);
+			inst |= (atoi(arg2) << 0);
+		}
+	  	// 010
+    	else if (!strcmp(opcode, "lw")) {
+			inst |= (2 << 22);
+			inst |= (atoi(arg0) << 19);
+			inst |= (atoi(arg1) << 16);
+			inst |= (isNumber(arg2) ? atoi(arg2) : calc_label(arg2));
+		}
+		// 011
+    	else if (!strcmp(opcode, "sw")) {
+			inst += 3 << 22;
+			inst |= (atoi(arg0) << 19);
+			inst |= (atoi(arg1) << 16);
+			inst |= (isNumber(arg2) ? atoi(arg2) : calc_label(arg2));
+		}
+		// 100
+		else if (!strcmp(opcode, "beq")) {
+			inst |= 4 << 22;
+			inst |= (atoi(arg0) << 19);
+			inst |= (atoi(arg1) << 16);
+			inst |= (isNumber(arg2) ? atoi(arg2) : (unsigned short)(calc_label(arg2) - address - 1));
+		}
+		// 101
+    	else if (!strcmp(opcode, "jalr")) {
+			inst |= 5 << 22;
+			inst |= (atoi(arg0) << 19);
+			inst |= (atoi(arg1) << 16);
+		}
+    	// 110
+		else if (!strcmp(opcode, "halt")) {
+			inst |= 6 << 22;
+		}
+		// 111
+    	else if (!strcmp(opcode, "noop")) {
+			inst |= 7 << 22;
+		}
+		else if (!strcmp(opcode, ".fill")) {
+			inst = isNumber(arg0) ? atoi(arg0) : calc_label(arg0);
+		}
+		fprintf(outFilePtr, "%d\n", inst);
+		printf("%d\n", inst);
+		printf("%s %s %s %s %s\n", label, opcode, arg0, arg1, arg2);
+		address++;
 	}
 
 	if (inFilePtr) {
@@ -120,4 +204,3 @@ int isNumber(char *string)
 	int i;
 	return( (sscanf(string, "%d", &i)) == 1);
 }
-
