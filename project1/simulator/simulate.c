@@ -17,6 +17,24 @@ typedef struct stateStruct {
 void printState(stateType *);
 int convertNum(int num);
 
+/**
+ * @brief decompose machinary code into readable fragments.
+ * 
+ * @param machine_code mc
+ * @param opcode opcode
+ * @param reg0 regA
+ * @param reg1 regB
+ * @param reg2 destReg
+ * @param offset offsetField
+ */
+void decompose_line(int machine_code, int* opcode, int* reg0, int* reg1, int* reg2, int* offset) {
+    *opcode = machine_code >> 22; machine_code &= ~(*opcode << 22);
+    *reg0 = machine_code >> 19; machine_code &= ~(*reg0 << 19);
+    *reg1 = machine_code >> 16; machine_code &= ~(*reg1 << 16);
+    *offset = convertNum(machine_code);
+    *reg2 = (machine_code & 7);
+}
+
 int main(int argc, char *argv[])
 {
     char line[MAXLINELENGTH];
@@ -46,7 +64,59 @@ int main(int argc, char *argv[])
         printf("memory[%d]=%d\n", state.numMemory, state.mem[state.numMemory]);
     }
 
-		/* TODO: */
+    /**
+     * simulator part.
+     */
+
+    // init regs
+    for(int i = 0; i < NUMREGS; ++i) state.reg[i] = 0;
+
+    // decompose mc and simulate.
+    state.pc = 0;
+    int opcode, reg0, reg1, reg2, offset, delta, is_end = 0, inst_cnt = 0;
+    while(1) {
+        delta = 1;
+        printState(&state);
+
+        if (is_end) break;
+
+        inst_cnt++;
+        decompose_line(state.mem[state.pc], &opcode, &reg0, &reg1, &reg2, &offset);
+
+        switch (opcode) {
+            case 0:
+                state.reg[reg2] = state.reg[reg0] + state.reg[reg1];
+                break;
+            case 1:
+                state.reg[reg2] = ~(state.reg[reg0] | state.reg[reg1]);
+                break;
+            case 2:
+                state.reg[reg1] = state.mem[ state.reg[reg0] + offset ];
+                break;
+            case 3:
+                state.mem[ state.reg[reg0] + offset ] = state.reg[reg1];
+                break;
+            case 4:
+                if (state.reg[reg0] == state.reg[reg1]) delta += offset;
+                break;
+            case 5:
+                state.reg[reg1] = state.pc + 1;
+                state.pc = state.reg[reg0];
+                delta = 0;
+                break;
+            case 6:
+                is_end = 1;
+                printf("machine halted.\n");
+                printf("total of %d instructions executed.\n", inst_cnt);
+                printf("final state of machine:\n");
+                break;
+            case 7:
+                break;        
+        }
+
+        state.pc += delta;
+    }
+
     return(0);
 }
 
