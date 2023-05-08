@@ -9,7 +9,7 @@ and     nor      6       6       3       reg3 = not reg6
         nor      7       7       4       reg4 = not reg7
         nor      3       4       4       reg4 = reg3 and reg4
         jalr     2       3               jump to original call point
-main    lw       0       3       andAddr load 'and' function location to reg2
+main    lw       0       3       adAddr  load 'and' function location to reg2
         jalr     3       2               calculate 'and'
         beq      0       4       jmp
         add      1       5       1       reg1 += reg5
@@ -24,9 +24,9 @@ jmp     add      5       5       5       reg5 << 1
 done    halt 
 mcand   .fill    32766
 mplier  .fill    12328
-andAddr .fill    and
-mainAdr .fill    main   
-jmpAdrr .fill    jmp
+adAddr  .fill    and
+mnAddr  .fill    main   
+jpAdrr  .fill    jmp
 one     .fill    1
 neg     .fill    -1
 iter    .fill    16

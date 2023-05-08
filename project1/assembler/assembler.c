@@ -83,6 +83,10 @@ int main(int argc, char *argv[])
 				printf("error: %s label already exists.\n", label);
 				exit(1);
 			}
+			if (strlen(label) > 6) {
+				printf("error: label length must be less than 7.\n");
+				exit(1);
+			}
 			strcpy(symbol_table[address].label, label);
 			symbol_table[address].address = address;
 		}

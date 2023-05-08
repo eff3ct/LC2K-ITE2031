@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
         state.pc += delta;
     }
 
+    exit(0);
+
     return(0);
 }
 
